@@ -792,6 +792,28 @@ describe('app', function() {
       app.enableAuth();
       expect(app.isAuthEnabled).to.equal(true);
     });
+
+    it('auto-configures required models to provided dataSource', function() {
+      var AUTH_MODELS = ['User', 'ACL', 'AccessToken', 'Role', 'RoleMapping'];
+
+      // cleanup global state modified by previous test
+      AUTH_MODELS.forEach(function(m) {
+        loopback[m].app = null;
+        loopback[m].dataSource = null;
+      });
+
+      var app = loopback();
+      var db = app.dataSource('db', { connector: 'memory' });
+      app.enableAuth({ dataSource: 'db' });
+
+      expect(Object.keys(app.models)).to.include.members(AUTH_MODELS);
+
+      AUTH_MODELS.forEach(function(m) {
+        var Model = app.models[m];
+        expect(Model.dataSource, m + '.dataSource').to.equal(db);
+        expect(Model.shared, m + '.shared').to.equal(m === 'User');
+      });
+    });
   });
 
   describe.onServer('app.get(\'/\', loopback.status())', function() {
